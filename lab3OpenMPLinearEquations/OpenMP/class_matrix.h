@@ -7,7 +7,7 @@
 #include <memory>
 #include "xmmintrin.h"
 
-using SymmetricMatrix = class matrix;
+using Matrix = class matrix;
 using Vector = class matrix;
 
 constexpr int kPackSize = 2;
@@ -30,7 +30,7 @@ public:
     friend matrix operator&(double, const matrix&);
 
     void Print() const;
-    void PrintSolutionPart() const;
+    void PrintPart() const;
 private:
     void ReadDataFromFile(const std::string&);
 

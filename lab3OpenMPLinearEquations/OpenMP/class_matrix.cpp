@@ -47,7 +47,7 @@ void matrix::Print() const
     std::cout << std::endl;
 }
 
-void matrix::PrintSolutionPart() const
+void matrix::PrintPart() const
 {
     std::cout << "Vector-solution parts: ";
     std::cout << matrix_[0] << " ";
@@ -69,6 +69,7 @@ matrix operator+(const matrix& mat1, const matrix& mat2)
         loop_end -= 2;
     }
 
+    #pragma omp for
     for (auto i = 0; i < loop_end; i+=2)
     {
         part_mat1 = _mm_loadu_pd(&mat1.matrix_[i]);

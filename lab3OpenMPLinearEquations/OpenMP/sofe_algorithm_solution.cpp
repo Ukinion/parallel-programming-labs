@@ -10,7 +10,7 @@ constexpr int kMinStreakOfSolution = 30;
 constexpr int kTimes = 6;
 constexpr int kMasterThread = 0;
 
-double GetNextAlpha(double r_n_dt_prod, const SymmetricMatrix& A, const Vector& z_n)
+double GetNextAlpha(double r_n_dt_prod, const Matrix& A, const Vector& z_n)
 {
     auto dt_prod = ((A * z_n) ^ z_n);
     if (dt_prod == 0) { return kSolutionFound; }
@@ -23,7 +23,7 @@ Vector GetNextVectorX(const Vector& x_n, double alpha_n_next, const Vector& z_n)
     return (x_n + (alpha_n_next & z_n));
 }
 
-Vector GetNextVectorR(const Vector& r_n, double alpha_n_next, const SymmetricMatrix& A, const Vector& z_n)
+Vector GetNextVectorR(const Vector& r_n, double alpha_n_next, const Matrix& A, const Vector& z_n)
 {
     return (r_n - (alpha_n_next & (A * z_n)));
 }
@@ -39,7 +39,7 @@ Vector GetNextVectorZ(const Vector& r_n_next, double beta_n_next, const Vector& 
     return (r_n_next - (beta_n_next & z_n));
 }
 
-Vector ConjugatedGradientMethod(const SymmetricMatrix& A, const Vector& x_0, const Vector& b) {
+Vector ConjugatedGradientMethod(const Matrix& A, const Vector& x_0, const Vector& b) {
     Vector x_n = x_0;
 
     Vector r_n = (b - A * x_0);
@@ -57,7 +57,8 @@ Vector ConjugatedGradientMethod(const SymmetricMatrix& A, const Vector& x_0, con
         if ((r_n_norm_square = !r_n) < end_point)
         {
             if (streak++ > kMinStreakOfSolution) { break; }
-        } else { streak = 0; }
+        }
+        else { streak = 0; }
 
         alpha = GetNextAlpha(r_n_norm_square, A, z_n);
         if (alpha == kSolutionFound) { break; }
@@ -81,16 +82,17 @@ Vector ConjugatedGradientMethod(const SymmetricMatrix& A, const Vector& x_0, con
     return x_n;
 }
 
-int LabNoMPI(int argc, char* argv[])
+int LabOpenMP(int argc, char* argv[])
 {
-#pragma omp parallel num_threads(std::stoi(argv[1])) default(none), shared(std::cerr, std::cout, argv)
+    #pragma omp parallel num_threads(std::stoi(argv[1])) default(none), shared(std::cerr, std::cout, argv)
     {
         double start = omp_get_wtime();
         double end;
         double min_tm = kInfinity;
 
         int N = std::stoi(argv[2]);
-        if (N <= kMinMatrixSize) {
+        if (N <= kMinMatrixSize)
+        {
             std::cerr << "Bad size";
             std::exit(1);
         }
@@ -98,18 +100,21 @@ int LabNoMPI(int argc, char* argv[])
         std::string mat_A_file(argv[3]);
         std::string vec_b_file(argv[4]);
 
-        auto A = new SymmetricMatrix(N, N, mat_A_file);
+        auto A = new Matrix(N, N, mat_A_file);
         auto b = new Vector(N, 1, vec_b_file);
         auto x = new Vector(N, 1, 0.0);
 
-        for (auto i = 1; i < kTimes; ++i) {
+        for (auto i = 1; i < kTimes; ++i)
+        {
             *x = ConjugatedGradientMethod(*A, *x, *b);
             end = omp_get_wtime() - start;
             if (end < min_tm) { min_tm = end; }
         }
 
         if (omp_get_thread_num() == kMasterThread)
-        { std::cout << "Computing time established: " << min_tm << std::endl; }
+        {
+            std::cout << "Computing time established: " << min_tm << std::endl;
+        }
 
         delete A;
         delete b;
