@@ -10,14 +10,16 @@ public:
     GameController(int, int);
 
     void CopyCurrentUniverse();
-    void ChangeCurrentUniverse();
-    void GetNextCellGeneration(const Universe&);
+    void GetNextCellGeneration();
+    void ChangeCellState(Cell&);
     bool CompareCurUniverseWithPrev() const;
 
+    void ShowLastUniverse() const;
     void StartGame();
     void EndGame();
 private:
-    bool IsEqualUniverse() const;
+    bool IsEqualUniverse(const Universe&) const;
+    void UpdateUniversePool();
 
     Universe support_;
     std::vector<Universe> universe_pool_;

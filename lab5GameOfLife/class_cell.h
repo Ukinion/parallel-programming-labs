@@ -2,7 +2,9 @@
 #define LAB5GAMEOFLIFE_CLASS_CELL_H
 
 #include <iostream>
+#include <algorithm>
 #include "constants.h"
+#include "class_universe.h"
 
 class GameController;
 class Universe;
@@ -37,6 +39,7 @@ public:
         return !(*this == cell);
     }
 
+
     void SetCoordinateX(int x) { x_ = x; }
     void SetCoordinateY(int y) { y_ = y; }
     void ChangeNumAliveNeighbour(int num_alive_neighbours) { num_alive_neighbours_ = num_alive_neighbours; }
@@ -46,11 +49,13 @@ public:
     auto GetCoordinateY() const { return y_; }
     auto GetNumAliveNeighbour() const { return num_alive_neighbours_; }
     auto GetLifeStage() const { return life_stage_; }
+    bool IsAlive() const { return life_stage_ == constants::game_objects::CellType::ALIVE; }
 
 private:
     int x_;
     int y_;
     int num_alive_neighbours_;
+    std::unordered_map<int, int> neighbours_map_;
 
     bool life_stage_;
 };

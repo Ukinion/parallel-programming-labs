@@ -3,8 +3,8 @@
 
 int main()
 {
-    GameController game_controller (5, 5);
-    game_controller.StartGame();
+    GameController game(5,5);
+    game.StartGame();
 
     return 0;
 }

@@ -1,14 +1,28 @@
 #include "class_universe.h"
 
+Universe::Universe() :
+pool_row_(0), pool_col_(0), pool_size_(0),
+fic_row_(0), fic_col_(0), fic_size_(0)
+{}
+
 Universe::Universe(int row, int col) :
-pool_row_(row), pool_col_(col), pool_size_(row*col), cell_pool_(row*col)
+pool_row_(row), pool_col_(col), pool_size_(row*col), cell_pool_(row*col),
+fic_row_(row+2), fic_col_(col+2), fic_size_((row+2)*(col+2))
 {
     DistributePlacesForCells();
     FillTranslateTable();
 }
 
 Universe::Universe(int row, int col, std::vector<Cell>& pool, std::unordered_map<int,int>& table) :
-pool_row_(row), pool_col_(col), pool_size_(row*col), cell_pool_(pool), translate_table_(table)
+pool_row_(row), pool_col_(col), pool_size_(row*col),
+cell_pool_(pool), translate_table_(table),
+fic_row_(row+2), fic_col_(col+2), fic_size_((row+2)*(col+2))
+{}
+
+Universe::Universe(const Universe & u) :
+pool_row_(u.pool_row_), pool_col_(u.pool_col_), pool_size_(u.pool_size_),
+cell_pool_(u.cell_pool_), translate_table_(u.translate_table_),
+fic_row_(u.fic_row_), fic_col_(u.fic_col_), fic_size_(u.fic_size_)
 {}
 
 void Universe::DistributePlacesForCells()
@@ -17,7 +31,7 @@ void Universe::DistributePlacesForCells()
     {
         for (auto j = 0; j < pool_col_; ++j)
         {
-            cell_pool_[i*pool_col_+j].MoveCell(i, j);
+            cell_pool_[i*pool_col_+j].MoveCell(j, i);
         }
     }
 }
@@ -33,46 +47,44 @@ void Universe::FillTranslateTable()
 
 void Universe::TranslateTopBoard()
 {
-    int y = -pool_col_;
-    for (auto x = 0; x < pool_col_-2; ++x)
+    for (auto x = 1; x < fic_col_-1; ++x)
     {
-        translate_table_[y+x] = (pool_row_-1)*pool_col_+x;
+        translate_table_[x] = (pool_row_-1)*pool_col_+x-1;
     }
 }
 
 void Universe::TranslateBotBoard()
 {
-    int y = pool_size_;
-    for (auto x = 0; x < pool_col_-2; ++x)
+    int y = fic_size_-fic_col_;
+    for (auto x = 1; x < fic_col_-1; ++x)
     {
-        translate_table_[y+x] = x;
+        translate_table_[y+x] = x-1;
     }
 }
 
 void Universe::TranslateLeftBoard()
 {
-    int x = -1;
-    for (auto y = 0; y < pool_row_-2; ++y)
+    for (auto y = 1; y < fic_row_-1; ++y)
     {
-        translate_table_[y*pool_col_+x] = y*pool_col_+pool_col_-1;
+        translate_table_[y*fic_col_] = y*pool_col_+pool_col_-1;
     }
 }
 
 void Universe::TranslateRightBoard()
 {
-    int x = pool_col_;
-    for (auto y = 0; y < pool_row_-2; ++y)
+    int x = fic_col_-1;
+    for (auto y = 1; y < fic_row_-1; ++y)
     {
-        translate_table_[y*pool_col_+x] = y*pool_col_;
+        translate_table_[y*fic_col_+x] = y*pool_col_;
     }
 }
 
 void Universe::TranslateCornerBoard()
 {
-    translate_table_[-pool_col_-1] = pool_size_-1;
-    translate_table_[pool_size_-1] = pool_col_-1;
-    translate_table_[0] = pool_size_-pool_col_;
-    translate_table_[pool_size_+pool_col_] = 0;
+    translate_table_[0] = pool_size_-1;
+    translate_table_[fic_col_-1] = pool_size_-pool_col_;
+    translate_table_[fic_size_-fic_col_] = pool_col_-1;
+    translate_table_[fic_size_-1] = 0;
 }
 
 void Universe::BornCells()
@@ -84,7 +96,9 @@ void Universe::BornCells()
     cell_pool_[2*pool_col_+1].ChangeLifeStage(true);
     cell_pool_[2*pool_col_+2].ChangeLifeStage(true);
 
+    ShowNeighbours();
     UpdateCellNeighbours();
+    ShowNeighbours();
 }
 
 void Universe::UpdateCellNeighbours()
@@ -97,38 +111,67 @@ void Universe::UpdateCellNeighbours()
 
 int Universe::ScanCellEnvironment(const Cell& cell)
 {
-    int num_neighbours = 0;
     if (IsBoundaryCell(cell))
     {
-        for (auto i = -1; i < constants::game_logic::LINE_ENVIRONMENT; ++i)
-        {
-            for (auto j = -1; j < constants::game_logic::LINE_ENVIRONMENT; ++j)
-            {
-                if (translate_table_.contains((cell.y_+i)*pool_col_+j))
-                {
-                    if (cell_pool_[translate_table_[(cell.y_+i)*pool_col_+j]].life_stage_)
-                        num_neighbours++;
-                }
-                else
-                {
-                    if (cell_pool_[(cell.y_+i)*pool_col_+j].life_stage_)
-                        ++num_neighbours;
-                }
-            }
-        }
+        return GetRoundBoundaryCell(cell);
     }
     else
     {
-        for (auto i = -1; i < constants::game_logic::LINE_ENVIRONMENT; ++i)
+        return GetRoundCommonCell(cell);
+    }
+}
+
+int Universe::GetRoundBoundaryCell(const Cell& cell)
+{
+    int num_neighbours = 0;
+    for (auto i = -1; i < constants::game_logic::LINE_ENVIRONMENT; ++i)
+    {
+        for (auto j = -1; j < constants::game_logic::LINE_ENVIRONMENT; ++j)
         {
-            for (auto j = -1; j < constants::game_logic::LINE_ENVIRONMENT; ++j)
+            if (IsNeighbourTranslated(i, j, cell))
             {
-                if (cell_pool_[(cell.y_+i)*pool_col_+j].life_stage_)
+                if (IsTranslatedNeighbourAlive(i, j, cell))
+                    ++num_neighbours;
+            }
+            else
+            {
+                if (IsNeighbourAlive(i, j, cell))
                     ++num_neighbours;
             }
         }
     }
-    return num_neighbours-1;
+    if (cell.IsAlive()) return num_neighbours-1;
+    else return num_neighbours;
+}
+
+bool Universe::IsNeighbourTranslated(int i, int j, const Cell& cell)
+{
+    return translate_table_.contains((cell.y_+i+1)*fic_col_+cell.x_+1+j);
+}
+
+bool Universe::IsTranslatedNeighbourAlive(int i, int j, const Cell& cell)
+{
+    return cell_pool_[translate_table_[(cell.y_+i+1)*fic_col_+cell.x_+1+j]].IsAlive();
+}
+
+bool Universe::IsNeighbourAlive(int i, int j, const Cell& cell)
+{
+    return cell_pool_[(cell.y_+i)*pool_col_+cell.x_+j].IsAlive();
+}
+
+int Universe::GetRoundCommonCell(const Cell& cell)
+{
+    int num_neighbours = 0;
+    for (auto i = -1; i < constants::game_logic::LINE_ENVIRONMENT; ++i)
+    {
+        for (auto j = -1; j < constants::game_logic::LINE_ENVIRONMENT; ++j)
+        {
+            if (IsNeighbourAlive(i, j, cell))
+                ++num_neighbours;
+        }
+    }
+    if (cell.IsAlive()) return num_neighbours-1;
+    else return num_neighbours;
 }
 
 bool Universe::IsBoundaryCell(const Cell& cell)
@@ -137,7 +180,6 @@ bool Universe::IsBoundaryCell(const Cell& cell)
         cell.y_ == pool_row_-1 || cell.y_ == 0) return true;
     else return false;
 }
-
 
 void Universe::ShowUniverse() const
 {
@@ -151,3 +193,29 @@ void Universe::ShowUniverse() const
     }
     std::cout << std::endl;
 }
+
+void Universe::ShowNeighbours() const
+{
+    for (auto i = 0; i < pool_row_; ++i)
+    {
+        for (auto j = 0; j < pool_col_; ++j)
+        {
+            std::cout << cell_pool_[i*pool_col_+j].GetNumAliveNeighbour() << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+Universe& Universe::operator=(const Universe& u)
+{
+    pool_row_ = u.pool_row_;
+    pool_col_ = u.pool_col_;
+    pool_size_ = u.pool_size_;
+    cell_pool_ = u.cell_pool_;
+    translate_table_ = u.translate_table_;
+    fic_row_ = u.fic_row_;
+    fic_col_ = u.fic_col_;
+    fic_size_ = u.fic_size_;
+}
+

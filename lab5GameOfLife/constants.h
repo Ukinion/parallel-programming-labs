@@ -11,13 +11,15 @@ namespace constants
     namespace game_logic
     {
         constexpr int LINE_ENVIRONMENT = 2;
+        constexpr int ITER_LIMIT = 30;
     }
 
     namespace game_objects
     {
         constexpr int START_NUM_UNIVERSE = 1;
+        constexpr int NEW_VECTOR_CAP = 3;
+        enum CellType { ALIVE = true, DEAD = false };
     }
-
 }
 
 
