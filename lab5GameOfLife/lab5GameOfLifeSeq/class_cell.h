@@ -4,9 +4,10 @@
 #include <iostream>
 #include <algorithm>
 #include "constants.h"
-#include "class_universe.h"
+
 
 class GameController;
+class GameOfLife;
 class Universe;
 
 class Cell
@@ -27,8 +28,8 @@ public:
 
     bool operator==(const Cell& cell) const
     {
-        if (x_ == cell.x_ && y_ == cell.y_ &&
-        life_stage_ == cell.life_stage_ && num_alive_neighbours_  == cell.num_alive_neighbours_)
+        if (life_stage_ == cell.life_stage_ && x_ == cell.x_ &&
+        y_ == cell.y_ && num_alive_neighbours_  == cell.num_alive_neighbours_)
             return true;
         else
             return false;
@@ -38,7 +39,6 @@ public:
     {
         return !(*this == cell);
     }
-
 
     void SetCoordinateX(int x) { x_ = x; }
     void SetCoordinateY(int y) { y_ = y; }
@@ -55,7 +55,6 @@ private:
     int x_;
     int y_;
     int num_alive_neighbours_;
-    std::unordered_map<int, int> neighbours_map_;
 
     bool life_stage_;
 };

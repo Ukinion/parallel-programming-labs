@@ -1,34 +1,37 @@
-#include "class_game_controller.h"
+#include "class_game_of_life.h"
+#include "stdlib.h"
+#include <chrono>
+#include <thread>
 
-GameController::GameController(int u_len_y, int u_len_x) :
-pool_size_(constants::game_objects::START_NUM_UNIVERSE),
+GameOfLife::GameOfLife(int u_len_y, int u_len_x) :
 universe_pool_(constants::game_objects::START_NUM_UNIVERSE, Universe(u_len_y, u_len_x))
 {}
 
-void GameController::StartGame()
+void GameOfLife::StartGame()
 {
     int it_cnt = 0;
     bool is_loop = false;
 
     universe_pool_.back().BornCells();
 
-    while(!is_loop || it_cnt < constants::game_logic::ITER_LIMIT)
+    //std::cout << std::endl;
+    while(!is_loop && it_cnt++ < constants::game_logic::ITER_LIMIT)
     {
-        ShowLastUniverse();
+        //ShowLastUniverse();
         CopyCurrentUniverse();
         GetNextCellGeneration();
-        is_loop = CompareCurUniverseWithPrev();
+        is_loop = IsAnyMatchUniverse();
         UpdateUniversePool();
-        ++it_cnt;
     }
+    std::cout << "iterations to loop: " << it_cnt << std::endl;
 }
 
-void GameController::CopyCurrentUniverse()
+void GameOfLife::CopyCurrentUniverse()
 {
     support_ = universe_pool_.back();
 }
 
-void GameController::GetNextCellGeneration()
+void GameOfLife::GetNextCellGeneration()
 {
     for (auto i = 0; i < support_.pool_row_; ++i)
     {
@@ -40,7 +43,7 @@ void GameController::GetNextCellGeneration()
     support_.UpdateCellNeighbours();
 }
 
-void GameController::ChangeCellState(Cell& cell)
+void GameOfLife::ChangeCellState(Cell& cell)
 {
     if (cell.IsAlive())
     {
@@ -49,23 +52,20 @@ void GameController::ChangeCellState(Cell& cell)
             cell.ChangeLifeStage(constants::game_objects::DEAD);
         }
     }
-    else
+    else if (cell.GetNumAliveNeighbour() == 3)
     {
-        if (cell.GetNumAliveNeighbour() == 3)
-        {
-            cell.ChangeLifeStage(constants::game_objects::ALIVE);
-        }
+        cell.ChangeLifeStage(constants::game_objects::ALIVE);
     }
 }
 
-bool GameController::CompareCurUniverseWithPrev() const
+bool GameOfLife::IsAnyMatchUniverse() const
 {
     return std::ranges::any_of(universe_pool_,
                                [this](const Universe& u)
-                               { return GameController::IsEqualUniverse(u); });
+                               { return GameOfLife::IsEqualUniverse(u); });
 }
 
-bool GameController::IsEqualUniverse(const Universe& u) const
+bool GameOfLife::IsEqualUniverse(const Universe& u) const
 {
     for (auto i = 0; i < u.pool_size_; ++i)
     {
@@ -75,7 +75,7 @@ bool GameController::IsEqualUniverse(const Universe& u) const
     return true;
 }
 
-void GameController::UpdateUniversePool()
+void GameOfLife::UpdateUniversePool()
 {
     if (universe_pool_.size() == universe_pool_.capacity())
     {
@@ -84,8 +84,18 @@ void GameController::UpdateUniversePool()
      universe_pool_.emplace_back(support_);
 }
 
-void GameController::ShowLastUniverse() const
+void GameOfLife::ShowLastUniverse() const
 {
     universe_pool_.back().ShowUniverse();
+    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    std::cout.flush();
+    std::system("clear");
+
     std::cout << std::endl;
+}
+
+void GameOfLife::EndGame()
+{
+    universe_pool_.clear();
+    universe_pool_.emplace_back(support_.pool_row_, support_.pool_col_);
 }
