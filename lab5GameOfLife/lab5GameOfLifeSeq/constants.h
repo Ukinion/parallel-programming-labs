@@ -13,7 +13,7 @@ namespace constants
     namespace game_logic
     {
         constexpr int LINE_ENVIRONMENT = 2;
-        constexpr int ITER_LIMIT = 1000;
+        constexpr int ITER_LIMIT = 10000;
     }
 
     namespace game_objects

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include "constants.h"
 
-
 class GameController;
 class GameOfLife;
 class Universe;

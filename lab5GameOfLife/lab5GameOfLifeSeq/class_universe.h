@@ -10,8 +10,7 @@ class Universe
 public:
     friend GameOfLife;
     Universe();
-    Universe(int, int);
-    Universe(int, int, std::vector<Cell>&, std::unordered_map<int,int>&);
+    Universe(int, int, const std::unordered_map<int, int>&);
     Universe(const Universe&);
 
     Universe& operator=(const Universe&);
@@ -39,7 +38,7 @@ private:
     bool IsNeighbourAlive(int, int, const Cell&);
 
     std::vector<Cell> cell_pool_;
-    std::unordered_map<int, int> translate_table_;
+    const std::unordered_map<int,int>& translate_table_;
 
     int pool_row_;
     int pool_col_;

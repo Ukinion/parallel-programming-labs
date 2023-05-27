@@ -1,4 +1,4 @@
-#include "sofe_algorithm_mpi_solution.h"
+#include "sofe_algorithm_mpi_solution.h"q
 
 constexpr double kEpsilon = 1e-10;
 constexpr double kInfinity = 1e+10;

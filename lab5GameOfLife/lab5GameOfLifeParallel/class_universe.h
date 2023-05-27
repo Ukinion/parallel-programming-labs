@@ -1,7 +1,6 @@
 #ifndef LAB5GAMEOFLIFEPARALLEL_CLASS_UNIVERSE_H
 #define LAB5GAMEOFLIFEPARALLEL_CLASS_UNIVERSE_H
 
-
 #include <vector>
 #include <unordered_map>
 #include "class_cell.h"
@@ -10,9 +9,9 @@ class Universe
 {
 public:
     friend GameOfLife;
+    friend GameDataScheduler;
     Universe();
     Universe(int, int);
-    Universe(int, int, std::vector<Cell>&, std::unordered_map<int,int>&);
     Universe(const Universe&);
 
     Universe& operator=(const Universe&);
@@ -50,7 +49,5 @@ private:
     int fic_col_;
     int fic_size_;
 };
-
-
 
 #endif

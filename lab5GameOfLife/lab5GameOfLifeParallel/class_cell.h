@@ -1,42 +1,40 @@
 #ifndef LAB5GAMEOFLIFEPARALLEL_CLASS_CELL_H
 #define LAB5GAMEOFLIFEPARALLEL_CLASS_CELL_H
 
-
 #include <iostream>
 #include <algorithm>
 #include "constants.h"
+#include "mpi.h"
 
 class GameController;
 class GameOfLife;
+class GameDataScheduler;
 class Universe;
 
-class Cell
-{
+class Cell {
 public:
     friend Universe;
     Cell() :
-            x_(0), y_(0), num_alive_neighbours_(0), life_stage_ (false) {}
+    x_(0), y_(0), num_alive_neighbours_(0), life_stage_ (false) {}
 
     Cell(int x, int y, bool is_alive) :
-            x_(x), y_(y), num_alive_neighbours_(0), life_stage_(is_alive) {}
+    x_(x), y_(y), num_alive_neighbours_(0), life_stage_(is_alive) {}
 
-    void MoveCell(int x, int y)
-    {
+    void MoveCell(int x, int y) {
         x_ = x;
         y_ = y;
     }
 
-    bool operator==(const Cell& cell) const
-    {
+    bool operator==(const Cell& cell) const {
         if (life_stage_ == cell.life_stage_ && x_ == cell.x_ &&
-            y_ == cell.y_ && num_alive_neighbours_  == cell.num_alive_neighbours_)
+            y_ == cell.y_ && num_alive_neighbours_  == cell.num_alive_neighbours_) {
             return true;
-        else
+        } else {
             return false;
+        }
     }
 
-    bool operator!=(const Cell& cell) const
-    {
+    bool operator!=(const Cell& cell) const {
         return !(*this == cell);
     }
 

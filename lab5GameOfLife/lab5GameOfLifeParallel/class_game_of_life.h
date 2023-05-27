@@ -1,10 +1,10 @@
-#ifndef LAB5GAMEOFLIFE_CLASS_GAME_OF_LIFE_H
-#define LAB5GAMEOFLIFE_CLASS_GAME_OF_LIFE_H
+#ifndef LAB5GAMEOFLIFEPARALLEL_CLASS_GAME_OF_LIFE_H
+#define LAB5GAMEOFLIFEPARALLEL_CLASS_GAME_OF_LIFE_H
 
 #include "class_universe.h"
+#include "class_game_data_scheduler.h"
 
-class GameOfLife
-{
+class GameOfLife {
 public:
     GameOfLife(int, int);
 
@@ -14,26 +14,19 @@ public:
     bool IsAnyMatchUniverse() const;
 
     void ShowLastUniverse() const;
-    void ShowTranslateTable() const;
     void StartNewGame();
+    void PrepareGameResource();
     void EndGame();
 private:
     bool IsEqualUniverse(const Universe &u) const;
     void UpdateUniversePool();
-    void FillTranslateTable(int, int);
-    void TranslateTopBoard(int, int);
-    void TranslateBotBoard(int, int);
-    void TranslateLeftBoard(int, int);
-    void TranslateRightBoard(int, int);
-    void TranslateCornerBoard(int, int);
 
     bool is_loop_;
     int it_cnt_;
 
-    Universe support_;
+    GameDataScheduler scheduler_;
+    Universe universe_part_;
     std::vector<Universe> universe_pool_;
-    std::unordered_map<int, int> translate_table_;
 };
-
 
 #endif

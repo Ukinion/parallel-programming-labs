@@ -1,29 +1,22 @@
 #include "class_universe.h"
 
+#include <utility>
+
 Universe::Universe() :
 pool_row_(0), pool_col_(0), pool_size_(0),
-fic_row_(0), fic_col_(0), fic_size_(0)
+fic_row_(0), fic_col_(0), fic_size_(0),
+translate_table_(std::move(*new std::unordered_map<int, int>()))
 {}
 
-Universe::Universe(int row, int col) :
+Universe::Universe(int row, int col, const std::unordered_map<int,int>& table) :
 pool_row_(row), pool_col_(col), pool_size_(row*col), cell_pool_(row*col),
-fic_row_(row+2), fic_col_(col+2), fic_size_((row+2)*(col+2))
+fic_row_(row+2), fic_col_(col+2), fic_size_((row+2)*(col+2)),
+translate_table_(table)
 {
     DistributePlacesForCells();
-    FillTranslateTable();
 }
 
-Universe::Universe(int row, int col, std::vector<Cell>& pool, std::unordered_map<int,int>& table) :
-pool_row_(row), pool_col_(col), pool_size_(row*col),
-cell_pool_(pool), translate_table_(table),
-fic_row_(row+2), fic_col_(col+2), fic_size_((row+2)*(col+2))
-{}
-
-Universe::Universe(const Universe& u) :
-pool_row_(u.pool_row_), pool_col_(u.pool_col_), pool_size_(u.pool_size_),
-cell_pool_(u.cell_pool_), translate_table_(u.translate_table_),
-fic_row_(u.fic_row_), fic_col_(u.fic_col_), fic_size_(u.fic_size_)
-{}
+Universe::Universe(const Universe& u) = default;
 
 void Universe::DistributePlacesForCells()
 {
@@ -34,57 +27,6 @@ void Universe::DistributePlacesForCells()
             cell_pool_[i*pool_col_+j].MoveCell(j, i);
         }
     }
-}
-
-void Universe::FillTranslateTable()
-{
-    TranslateTopBoard();
-    TranslateBotBoard();
-    TranslateLeftBoard();
-    TranslateRightBoard();
-    TranslateCornerBoard();
-}
-
-void Universe::TranslateTopBoard()
-{
-    for (auto x = 1; x < fic_col_-1; ++x)
-    {
-        translate_table_[x] = (pool_row_-1)*pool_col_+x-1;
-    }
-}
-
-void Universe::TranslateBotBoard()
-{
-    int y = fic_size_-fic_col_;
-    for (auto x = 1; x < fic_col_-1; ++x)
-    {
-        translate_table_[y+x] = x-1;
-    }
-}
-
-void Universe::TranslateLeftBoard()
-{
-    for (auto y = 1; y < fic_row_-1; ++y)
-    {
-        translate_table_[y*fic_col_] = (y-1)*pool_col_+pool_col_-1;
-    }
-}
-
-void Universe::TranslateRightBoard()
-{
-    int x = fic_col_-1;
-    for (auto y = 1; y < fic_row_-1; ++y)
-    {
-        translate_table_[y*fic_col_+x] = (y-1)*pool_col_;
-    }
-}
-
-void Universe::TranslateCornerBoard()
-{
-    translate_table_[0] = pool_size_-1;
-    translate_table_[fic_col_-1] = pool_size_-pool_col_;
-    translate_table_[fic_size_-fic_col_] = pool_col_-1;
-    translate_table_[fic_size_-1] = 0;
 }
 
 void Universe::BornCells()
@@ -129,11 +71,13 @@ int Universe::GetRoundBoundaryCell(const Cell& cell)
             if (IsNeighbourTranslated(i, j, cell))
             {
                 if (IsTranslatedNeighbourAlive(i, j, cell))
+                {
                     ++num_neighbours;
+                }
             }
             else if (IsNeighbourAlive(i, j, cell))
             {
-                    ++num_neighbours;
+                ++num_neighbours;
             }
         }
     }
@@ -227,24 +171,4 @@ void Universe::ShowArrayIndexBoard() const
     std::cout << std::endl;
 }
 
-void Universe::ShowTranslateTable() const
-{
-    for (std::pair<const int, int> i : translate_table_)
-    {
-        std::cout << "outer cell: " << i.first << " | ";
-        std::cout << "inner cell: " << i.second << std::endl;
-    }
-}
-
-Universe& Universe::operator=(const Universe& u)
-{
-    pool_row_ = u.pool_row_;
-    pool_col_ = u.pool_col_;
-    pool_size_ = u.pool_size_;
-    cell_pool_ = u.cell_pool_;
-    translate_table_ = u.translate_table_;
-    fic_row_ = u.fic_row_;
-    fic_col_ = u.fic_col_;
-    fic_size_ = u.fic_size_;
-}
-
+Universe& Universe::operator=(const Universe& u) = default;

@@ -3,27 +3,77 @@
 #include <chrono>
 #include <thread>
 
-GameOfLife::GameOfLife(int u_len_y, int u_len_x) :
-universe_pool_(constants::game_objects::START_NUM_UNIVERSE, Universe(u_len_y, u_len_x))
-{}
-
-void GameOfLife::StartGame()
+GameOfLife::GameOfLife(int game_field_row, int game_field_col) :
+it_cnt_(0), is_loop_(false)
 {
-    int it_cnt = 0;
-    bool is_loop = false;
+    FillTranslateTable(game_field_row, game_field_col);
+}
+
+void GameOfLife::FillTranslateTable(int row, int col)
+{
+    TranslateTopBoard(row, col);
+    TranslateBotBoard(row, col);
+    TranslateLeftBoard(row, col);
+    TranslateRightBoard(row, col);
+    TranslateCornerBoard(row, col);
+}
+
+void GameOfLife::TranslateTopBoard(int row, int col)
+{
+    for (auto x = 1; x < col+1; ++x)
+    {
+        translate_table_[x] = (row-1)*col+x-1;
+    }
+}
+
+void GameOfLife::TranslateBotBoard(int row, int col)
+{
+    int y = (row+2)*(col+2)-(col+2);
+    for (auto x = 1; x < col+1; ++x)
+    {
+        translate_table_[y+x] = x-1;
+    }
+}
+
+void GameOfLife::TranslateLeftBoard(int row, int col)
+{
+    for (auto y = 1; y < row+1; ++y)
+    {
+        translate_table_[y*(col+2)] = (y-1)*col+col-1;
+    }
+}
+
+void GameOfLife::TranslateRightBoard(int row, int col)
+{
+    int x = col+1;
+    for (auto y = 1; y < row+1; ++y)
+    {
+        translate_table_[y*(col+2)+x] = (y-1)*col;
+    }
+}
+
+void GameOfLife::TranslateCornerBoard(int row, int col)
+{
+    translate_table_[0] = row*col-1;
+    translate_table_[col+1] = row*col-col;
+    translate_table_[(row+2)*(col+2)-(col+2)] = col-1;
+    translate_table_[(row+2)*(col+2)-1] = 0;
+}
+
+void GameOfLife::StartNewGame()
+{
 
     universe_pool_.back().BornCells();
 
     //std::cout << std::endl;
-    while(!is_loop && it_cnt++ < constants::game_logic::ITER_LIMIT)
+    while(!is_loop_ && it_cnt_++ < constants::game_logic::ITER_LIMIT)
     {
         //ShowLastUniverse();
         CopyCurrentUniverse();
         GetNextCellGeneration();
-        is_loop = IsAnyMatchUniverse();
+        is_loop_ = IsAnyMatchUniverse();
         UpdateUniversePool();
     }
-    std::cout << "iterations to loop: " << it_cnt << std::endl;
 }
 
 void GameOfLife::CopyCurrentUniverse()
@@ -96,6 +146,24 @@ void GameOfLife::ShowLastUniverse() const
 
 void GameOfLife::EndGame()
 {
+    if (is_loop_)
+    {
+        std::cout << "Loop was found!" << std::endl;
+        std::cout << "iterations to loop: " << it_cnt_ << std::endl;
+    }
+    else
+    {
+        std::cout << "Reached iteration limit: " << constants::game_logic::ITER_LIMIT << std::endl;
+    }
     universe_pool_.clear();
-    universe_pool_.emplace_back(support_.pool_row_, support_.pool_col_);
+    universe_pool_.emplace_back(support_);
+}
+
+void GameOfLife::ShowTranslateTable() const
+{
+    for (std::pair<const int, int> i : translate_table_)
+    {
+        std::cout << "outer cell: " << i.first << " | ";
+        std::cout << "inner cell: " << i.second << std::endl;
+    }
 }
