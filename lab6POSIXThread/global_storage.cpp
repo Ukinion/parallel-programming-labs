@@ -19,7 +19,7 @@ void GlobalStorage::ScheduleTask() {
     additional_tasks = new int[size]{};
     if (rank == constants::process::PRINTER_PROCESS) {
         iter_time = std::vector<double>(size, 1);
-        itertime_proc_pair.reserve(size);
+        sorted_times.reserve(size);
     }
     list_size = size*constants::task::TASK_MULTIPLIER;
     last_task = size*constants::task::TASK_MULTIPLIER - 1;
@@ -52,10 +52,10 @@ void GlobalStorage::ComputeStatistics() {
         proportion = 100;
     } else {
         for (auto i = 0; i < size; ++i) {
-            itertime_proc_pair.emplace_back(iter_time[i]);
+            sorted_times.emplace_back(iter_time[i]);
         }
-        std::sort(itertime_proc_pair.begin(), itertime_proc_pair.end());
-        imbalance = *itertime_proc_pair.rbegin() - *itertime_proc_pair.begin();
-        proportion = imbalance / *itertime_proc_pair.rbegin() * 100;
+        std::sort(sorted_times.begin(), sorted_times.end());
+        imbalance = *sorted_times.rbegin() - *sorted_times.begin();
+        proportion = imbalance / *sorted_times.rbegin() * 100;
     }
 }

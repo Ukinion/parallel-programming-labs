@@ -35,11 +35,11 @@ void* WorkerThreadJob(void* t) {
     double start_time, end_time;
     while (storage.iter_count < constants::task::ITERATION_LIMIT) {
         start_time = MPI_Wtime();
+        task_on_iter = 0;
         pthread_mutex_lock(&storage.mutex);
         ScheduleNewTasks();
         storage.cur_task = 0;
         storage.last_task = storage.list_size - 1;
-        task_on_iter = 0;
         pthread_mutex_unlock(&storage.mutex);
         while (true) {
             pthread_mutex_lock(&storage.mutex);

@@ -12,7 +12,7 @@ public:
 
     int* task_list;
     std::vector<double> iter_time;
-    std::vector<double> itertime_proc_pair;
+    std::vector<double> sorted_times;
     int* additional_tasks;
     int list_size;
     int cur_task;
