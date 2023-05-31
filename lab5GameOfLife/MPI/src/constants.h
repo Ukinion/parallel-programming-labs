@@ -7,6 +7,9 @@ namespace constants {
         constexpr int BASE_HISTORY_CAPACITY = 21;
         constexpr int ITERATION_LIMIT = 4000;
         constexpr int NEW_CAPACITY_ADDITION = 30;
+        constexpr int ROOT = 0;
+        constexpr char DEAD_CELL = '0';
+        constexpr char LIVING_CELL = '1';
     }
 
     namespace runtime {

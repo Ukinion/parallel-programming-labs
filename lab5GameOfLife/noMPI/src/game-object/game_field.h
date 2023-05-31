@@ -16,11 +16,9 @@ public:
     void InitGameField(int, int);
     void CreateGlider(int, int);
     bool IsOutOfField(int x, int y) const;
-    bool IsOutOfField(const Cell&) const;
     void NextGeneration(const GameField&);
     int CountAliveNeighbours(const Cell&, const GameField&) const;
     friend bool operator==(const GameField&, const GameField&);
-    void PrintField() const;
 private:
     bool IsInvalidFieldOptions(int, int) const;
     static bool IsNotComparable(const GameField&, const GameField&);

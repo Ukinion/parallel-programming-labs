@@ -42,10 +42,6 @@ bool GameField::IsOutOfField(int x, int y) const {
     return x < -1 || x > col_ || y < -1 || y > row_;
 }
 
-bool GameField::IsOutOfField(const Cell& cell) const {
-    return IsOutOfField(cell.GetCoordX(), cell.GetCoordY());
-}
-
 void GameField::NextGeneration(const GameField& prev_generation) {
     Cell cell{};
     int num_alive_neigh;
@@ -91,14 +87,4 @@ bool operator==(const GameField& this_field, const GameField& another_field) {
 
 bool GameField::IsNotComparable(const GameField& this_field, const GameField& another_field) {
     return this_field.row_ != another_field.row_ || this_field.col_ != another_field.col_;
-}
-
-void GameField::PrintField() const {
-    for (auto i = 0; i < row_; ++i) {
-        for (auto j = 0; j < col_; ++j) {
-            std::cout << (game_field_[i*col_+j].IsAlive() ? 1 : 0) << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
 }
