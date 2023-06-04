@@ -5,8 +5,9 @@ LaunchController::LaunchController() {
 }
 
 void LaunchController::PrepareGameResources() {
-    int rank;
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
     int* send_counts;
     int* displacement;
     int* rows;
@@ -15,21 +16,19 @@ void LaunchController::PrepareGameResources() {
         game_field.InitGameField(settings_.row, settings_.col);
         game_field.CreateGlider(settings_.start_x, settings_.start_y);
     }
-    CountDataForScatter(send_counts, displacement, rows);
+    CountDataForScatter(send_counts, displacement, rows, size);
     std::vector<char> field_part (send_counts[rank]);
     MPI_Scatterv(&game_field.GetField()[0], send_counts, displacement,
                  MPI_CHAR, &field_part[0], send_counts[rank],
                  MPI_CHAR, constants::game::ROOT, MPI_COMM_WORLD);
-    resources_.part_field.SetNewField(field_part, rows[rank], settings_.col);
+    field_part_.SetNewField(field_part, rows[rank], settings_.col, rank, size);
     settings_.row = rows[rank];
     delete[] send_counts;
     delete[] displacement;
     delete[] rows;
 }
 
-void LaunchController::CountDataForScatter(int* send_counts, int* displacement, int* rows) {
-    int size;
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+void LaunchController::CountDataForScatter(int* send_counts, int* displacement, int* rows, int size) {
     int rows_per_proc = settings_.row / size;
     int remain_rows = settings_.row - rows_per_proc * size;
     int offset = 0;
@@ -59,7 +58,7 @@ void LaunchController::SetupGameSettings(int row, int col) {
 
 void LaunchController::LaunchGame() {
     try {
-        game_->SetField(resources_.part_field);
+        game_->SetField(field_part_);
         game_->StartGame();
     } catch (const game_exception& e) {
         std::cerr << "\n\t*******************************";

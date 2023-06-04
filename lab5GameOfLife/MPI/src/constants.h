@@ -15,4 +15,9 @@ namespace constants {
     namespace runtime {
         constexpr int EXCEPTION_THROW = 0x1;
     }
+
+    namespace mpi {
+        constexpr int SEND_PREV = 0x7;
+        constexpr int SEND_NEXT = 0x8;
+    }
 }

@@ -19,13 +19,9 @@ private:
         int start_x;
         int start_y;
     };
-    class GameResource {
-    public:
-        GameField part_field;
-    };
-    void CountDataForScatter(int*, int*, int*);
+    void CountDataForScatter(int*, int*, int*,int);
 
     std::unique_ptr<GameOfLife> game_;
     GameSetting settings_;
-    GameResource resources_;
+    GameField field_part_;
 };

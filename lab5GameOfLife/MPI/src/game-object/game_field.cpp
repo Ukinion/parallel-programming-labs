@@ -1,3 +1,5 @@
+#include "mpi.h"
+
 #include "game_field.h"
 
 
@@ -38,31 +40,123 @@ bool GameField::IsOutOfField(int x, int y) const {
 }
 
 void GameField::NextGeneration(const GameField& prev_generation) {
+    prev_generation.SendRowPrevProcess();
+    prev_generation.SendRowNextProcess();
+    ReceiveNextProcessRow();
+    ReceivePrevProcessRow();
+    UpdateFieldMiddle(prev_generation.game_field_);
+    MPI_Wait(mpi_scheduler_.recv_first_row, MPI_STATUS_IGNORE);
+    UpdateFieldTop(prev_generation.game_field_);
+    MPI_Wait(mpi_scheduler_.recv_last_row, MPI_STATUS_IGNORE);
+    UpdateFieldBottom(prev_generation.game_field_);
+    MPI_Wait(mpi_scheduler_.send_first_row, MPI_STATUS_IGNORE);
+    MPI_Wait(mpi_scheduler_.send_last_row, MPI_STATUS_IGNORE);
+}
+
+void GameField::SendRowPrevProcess() const {
+    MPI_Isend(&game_field_[0], col_, MPI_CHAR,
+              mod(mpi_scheduler_.rank - 1, GameField::DataMPI::size),
+              constants::mpi::SEND_PREV, MPI_COMM_WORLD, mpi_scheduler_.send_last_row);
+}
+
+void GameField::SendRowNextProcess() const {
+    MPI_Isend(&game_field_[game_field_.size() - 1], col_, MPI_CHAR,
+              mod(mpi_scheduler_.rank + 1, GameField::DataMPI::size),
+              constants::mpi::SEND_NEXT, MPI_COMM_WORLD, mpi_scheduler_.send_first_row);
+}
+
+void GameField::ReceiveNextProcessRow() {
+    MPI_Irecv(&GameField::DataMPI::last_row[0], col_, MPI_CHAR,
+              mod(mpi_scheduler_.rank + 1 , GameField::DataMPI::size),
+              constants::mpi::SEND_PREV, MPI_COMM_WORLD, mpi_scheduler_.recv_last_row);
+}
+
+void GameField::ReceivePrevProcessRow() {
+    MPI_Irecv(&GameField::DataMPI::first_row[0], col_, MPI_CHAR,
+              mod(mpi_scheduler_.rank - 1 , GameField::DataMPI::size),
+              constants::mpi::SEND_NEXT, MPI_COMM_WORLD, mpi_scheduler_.recv_first_row);
+}
+
+void GameField::UpdateFieldMiddle(const std::vector<char>& prev_field) {
     int num_alive_neigh;
-    for (auto y = 0; y < row_; ++y) {
+    for (auto y = 1; y < row_ - 1; ++y) {
         for (auto x = 0; x < col_; ++x)
-        if (prev_generation.game_field_[y*col_+x] == constants::game::LIVING_CELL) {
-            num_alive_neigh = CountAliveNeighbours(x, y, prev_generation);
-            if (num_alive_neigh < 2 || num_alive_neigh > 3) {
-                this->game_field_[y*col_+x] = constants::game::DEAD_CELL;
+            if (prev_field[y * col_ + x] == constants::game::LIVING_CELL) {
+                num_alive_neigh = CountAliveNeighbours(x, y, prev_field);
+                if (num_alive_neigh < 2 || num_alive_neigh > 3) {
+                    this->game_field_[y * col_ + x] = constants::game::DEAD_CELL;
+                }
+            } else if (CountAliveNeighbours(x, y,prev_field) == 3) {
+                this->game_field_[y * col_ + x] = constants::game::LIVING_CELL;
             }
-        } else if (CountAliveNeighbours(x, y,prev_generation) == 3) {
-            this->game_field_[y*col_+x] = constants::game::LIVING_CELL;
-        }
     }
 }
 
-int GameField::CountAliveNeighbours(int x, int y, const GameField& this_field) const {
+int GameField::CountAliveNeighbours(int x, int y, const std::vector<char>& this_field) const {
     int num_alive_neigh = 0;
     for (auto i = -1; i < 2; ++i) {
         for (auto j = -1; j < 2; ++j) {
-            if (this_field.game_field_[mod(y + i, row_) * col_+ mod(x + j, col_)]
+            if (this_field[mod(y + i, row_) * col_+ mod(x + j, col_)]
                 == constants::game::LIVING_CELL) {
                 num_alive_neigh++;
             }
         }
     }
-    if (this_field.game_field_[y*col_+x] == constants::game::LIVING_CELL) {
+    if (this_field[y * col_ + x] == constants::game::LIVING_CELL) {
+        return num_alive_neigh - 1;
+    }
+    return num_alive_neigh;
+}
+
+void GameField::UpdateFieldTop(const std::vector<char>& prev_field) {
+    int num_alive_neigh;
+    for (auto x = 0; x < col_; ++x) {
+        if (prev_field[x] == constants::game::LIVING_CELL) {
+            num_alive_neigh = CountAliveNeighbours(x, 0,
+                                                   prev_field, 0, GameField::DataMPI::first_row);
+            if (num_alive_neigh < 2 || num_alive_neigh > 3) {
+                this->game_field_[x] = constants::game::DEAD_CELL;
+            }
+        } else if (CountAliveNeighbours(x, 0,
+                                        prev_field, 0, GameField::DataMPI::first_row) == 3) {
+            this->game_field_[x] = constants::game::LIVING_CELL;
+        }
+    }
+}
+
+void GameField::UpdateFieldBottom(const std::vector<char>& prev_field) {
+    int num_alive_neigh;
+    for (auto x = 0; x < col_; ++x) {
+        if (prev_field[(prev_field.size() - 1) * col_ + x] == constants::game::LIVING_CELL) {
+            num_alive_neigh = CountAliveNeighbours(x, prev_field.size() - 1,
+                                                   prev_field, -1, GameField::DataMPI::last_row);
+            if (num_alive_neigh < 2 || num_alive_neigh > 3) {
+                this->game_field_[(game_field_.size() - 1) * col_ + x] = constants::game::DEAD_CELL;
+            }
+        } else if (CountAliveNeighbours(x, prev_field.size() - 1,
+                                        prev_field, -1, GameField::DataMPI::last_row) == 3) {
+            this->game_field_[(game_field_.size() - 1) * col_ + x] = constants::game::LIVING_CELL;
+        }
+    }
+}
+
+int GameField::CountAliveNeighbours(int x, int y, const std::vector<char>& this_field,
+        int start, const std::vector<char>& sent_row) const {
+    int num_alive_neigh = 0;
+    for (auto i = start; i < 2; ++i) {
+        for (auto j = -1; j < 2; ++j) {
+            if (this_field[mod(y + i, row_) * col_+ mod(x + j, col_)]
+                == constants::game::LIVING_CELL) {
+                num_alive_neigh++;
+            }
+        }
+    }
+    for (auto j = -1; j < 2; ++j) {
+        if (sent_row[mod(x + j, col_)] == constants::game::LIVING_CELL) {
+            num_alive_neigh++;
+        }
+    }
+    if (this_field[y * col_ + x] == constants::game::LIVING_CELL) {
         return num_alive_neigh - 1;
     }
     return num_alive_neigh;
@@ -96,13 +190,23 @@ std::vector<char> GameField::GetField() const {
     return game_field_;
 }
 
-void GameField::SetNewField(const std::vector<char>& new_field, int row, int col) {
+void GameField::SetNewField(const std::vector<char>& new_field, int row, int col, int rank, int size) {
     if (IsInvalidFieldOptions(row, col)) {
         throw invalid_option_exception("\n\tError: Invalid field options.");
     }
     game_field_ = new_field;
     row_ = row;
     col_ = col;
-    prev_row_ = std::vector<char>(col);
-    next_row_ = std::vector<char>(col);
+    InitMetaMPI(rank, size);
+}
+
+void GameField::InitMetaMPI(int rank, int size) {
+    mpi_scheduler_.rank = rank;
+    GameField::DataMPI::size = size;
+    GameField::DataMPI::first_row = std::vector<char>(col_);
+    GameField::DataMPI::last_row = std::vector<char>(col_);
+    mpi_scheduler_.send_first_row = nullptr;
+    mpi_scheduler_.send_last_row = nullptr;
+    mpi_scheduler_.recv_first_row = nullptr;
+    mpi_scheduler_.recv_last_row = nullptr;
 }
